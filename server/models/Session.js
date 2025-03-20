@@ -11,7 +11,8 @@ const SessionSchema = new mongoose.Schema({
     description: { type: String, required: true },
     etat: { type: String, enum: ['active','archivée'], default: 'active' },
     creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    chapitres: [ChapterSchema]
+    chapitres: [ChapterSchema],
+    tags: { type: [String], default: [] }
 }, { timestamps: true });
 
 // JSON transform

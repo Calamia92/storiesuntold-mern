@@ -19,4 +19,7 @@ router.put('/:id', auth, sessionCtrl.updateSession);
 // DELETE session (and cascade contributions)
 router.delete('/:id', auth, sessionCtrl.deleteSession);
 
+// SEARCH on all session
+/*router.get('/search', sessionCtrl.searchSessions);*/
+
 module.exports = router;

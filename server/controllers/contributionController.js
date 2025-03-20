@@ -20,10 +20,27 @@ exports.createContribution = async (req, res) => {
     }
 };
 
-// READ all for session
+// READ contributions by session (protected or public selon votre besoin)
 exports.getContributionsForSession = async (req, res) => {
     try {
+        // Ici, on attend un query param "sessionId"
+        if (!req.query.sessionId) {
+            return res.status(400).json({ error: 'sessionId requis' });
+        }
         const contributions = await Contribution.find({ sessionId: req.query.sessionId });
+        res.json(contributions);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+};
+
+// READ contributions by creator (si besoin)
+exports.getContributionsByCreator = async (req, res) => {
+    try {
+        if (!req.query.creator) {
+            return res.status(400).json({ error: 'creator requis' });
+        }
+        const contributions = await Contribution.find({ creator: req.query.creator });
         res.json(contributions);
     } catch (err) {
         res.status(500).json({ error: 'Erreur serveur' });
@@ -70,19 +87,45 @@ exports.deleteContribution = async (req, res) => {
 // VOTE
 exports.voteContribution = async (req, res) => {
     try {
-        const contrib = await Contribution.findByIdAndUpdate(
-            req.params.id,
-            { $inc: { votes: 1 } },
-            { new: true }
-        );
+        const contrib = await Contribution.findById(req.params.id);
         if (!contrib) return res.status(404).json({ error: 'Contribution non trouvée' });
+
+        if (contrib.voters.includes(req.user.id)) {
+            return res.status(400).json({ error: 'Vous avez déjà voté pour cette contribution' });
+        }
+
+        contrib.votes += 1;
+        contrib.voters.push(req.user.id);
+        await contrib.save();
         res.json(contrib);
     } catch (err) {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
 
-// APPROVE
+// UNVOTE
+exports.unvoteContribution = async (req, res) => {
+    try {
+        const contrib = await Contribution.findById(req.params.id);
+        if (!contrib) return res.status(404).json({ error: 'Contribution non trouvée' });
+
+        // Vérifier que l'utilisateur a voté
+        if (!contrib.voters.includes(req.user.id)) {
+            return res.status(400).json({ error: "Vous n'avez pas voté pour cette contribution" });
+        }
+
+        // Retirer le vote
+        contrib.votes -= 1;
+        contrib.voters = contrib.voters.filter(voter => voter.toString() !== req.user.id);
+        await contrib.save();
+
+        res.json(contrib);
+    } catch (err) {
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+};
+
+// APPROVE (pour la modération)
 exports.validateContribution = async (req, res) => {
     try {
         const contrib = await Contribution.findByIdAndUpdate(
@@ -97,7 +140,7 @@ exports.validateContribution = async (req, res) => {
     }
 };
 
-// REJECT
+// REJECT (pour la modération)
 exports.rejectContribution = async (req, res) => {
     try {
         const contrib = await Contribution.findByIdAndUpdate(
@@ -112,7 +155,7 @@ exports.rejectContribution = async (req, res) => {
     }
 };
 
-// COMMENT
+// ADD COMMENT
 exports.addComment = async (req, res) => {
     try {
         const contrib = await Contribution.findById(req.params.id);
@@ -122,15 +165,5 @@ exports.addComment = async (req, res) => {
         res.json(contrib);
     } catch (err) {
         res.status(500).json({ error: 'Erreur serveur' });
-    }
-};
-
-// READ all by creator
-exports.getContributionsByCreator = async (req, res) => {
-    try {
-        const contributions = await Contribution.find({ creator: req.query.creator });
-        return res.json(contributions);
-    } catch (err) {
-        return res.status(500).json({ error: 'Erreur serveur' });
     }
 };

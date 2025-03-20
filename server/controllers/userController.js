@@ -36,9 +36,17 @@ exports.getProfile = async (req, res) => {
 
 // UPDATE
 exports.updateUser = async (req, res) => {
-    const updated = await User.findByIdAndUpdate(req.params.id, req.body, { new: true }).select('-password');
-    if (!updated) return res.status(404).json({ error: 'Utilisateur non trouvé' });
-    res.json(updated);
+    try {
+        const updateData = { ...req.body };
+        if (updateData.password) {
+            updateData.password = await bcrypt.hash(updateData.password, 12);
+        }
+        const updated = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
+        if (!updated) return res.status(404).json({ error: 'Utilisateur non trouvé' });
+        res.json(updated);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
 };
 
 // DELETE

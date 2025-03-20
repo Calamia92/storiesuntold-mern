@@ -13,9 +13,11 @@ const ContributionSchema = new mongoose.Schema({
     auteur: { type: String, required: true },
     creator: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     votes: { type: Number, default: 0 },
+    voters: { type: [mongoose.Schema.Types.ObjectId], default: [] },
     status: { type: String, enum: ['pending','accepted','rejected'], default: 'pending' },
     commentaires: [CommentSchema]
 }, { timestamps: true });
+
 
 // Index pour optimiser les requêtes par session
 ContributionSchema.index({ sessionId: 1 });

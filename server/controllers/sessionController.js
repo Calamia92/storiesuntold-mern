@@ -14,6 +14,7 @@ exports.createSession = async (req, res) => {
     }
 };
 
+
 // READ all (public)
 exports.getSessions = async (req, res) => {
     try {
@@ -63,3 +64,37 @@ exports.deleteSession = async (req, res) => {
         res.status(500).json({ error: 'Erreur serveur' });
     }
 };
+
+// SEARCH
+/*exports.searchSessions = async (req, res) => {
+    try {
+        let { query } = req.query;
+        console.log("Recherche avec query:", query);
+
+        // Si aucun query n'est fourni, on retourne toutes les sessions
+        if (!query) {
+            const sessions = await Session.find();
+            return res.json(sessions);
+        }
+
+        // Forcer query en chaîne de caractères (au cas où)
+        query = query.toString();
+
+        // Créer l'expression régulière de manière explicite
+        const regex = new RegExp(query, 'i');
+
+        const sessions = await Session.find({
+            $or: [
+                { titre: regex },
+                { description: regex },
+                { tags: regex }
+            ]
+        });
+        return res.json(sessions);
+    } catch (err) {
+        console.error("Erreur dans searchSessions:", err);
+        return res.status(500).json({ error: err.message });
+    }
+};
+*/
+
