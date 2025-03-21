@@ -6,8 +6,9 @@ import { useNavigate } from 'react-router-dom';
 
 export default function EditProfile() {
     const { user, setUser, logout } = useContext(AuthContext);
-    const [username, setUsername] = useState(user?.username || '');
-    const [email, setEmail] = useState(user?.email || '');
+    const [username, setUsername] = useState(user.username);
+    const [email, setEmail] = useState(user.email);
+    const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmNewPassword, setConfirmNewPassword] = useState('');
     const [error, setError] = useState('');
@@ -17,94 +18,94 @@ export default function EditProfile() {
         e.preventDefault();
         setError('');
 
-        // Si l'utilisateur veut changer son mot de passe, vérifier que les champs correspondent
-        if (newPassword || confirmNewPassword) {
-            if (newPassword !== confirmNewPassword) {
-                setError("Les mots de passe ne correspondent pas");
-                return;
-            }
+        // Validation client
+        if (!currentPassword) {
+            return setError('Veuillez saisir votre mot de passe actuel');
+        }
+        if (newPassword && newPassword !== confirmNewPassword) {
+            return setError('Les mots de passe ne correspondent pas');
         }
 
+        const payload = { username, email, currentPassword };
+        if (newPassword) payload.password = newPassword;
+
         try {
-            // Construire le payload : si newPassword est fourni, l'inclure dans la mise à jour
-            const payload = { username, email };
-            if (newPassword) {
-                payload.password = newPassword;
-            }
             const { data } = await axios.put(`/users/${user.id}`, payload);
             setUser(data);
             navigate('/profile');
         } catch (err) {
-            console.error(err);
-            setError('Erreur lors de la mise à jour du profil.');
+            const msg = err.response?.data?.error;
+            setError(msg || 'Erreur lors de la mise à jour du profil.');
+        } finally {
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmNewPassword('');
         }
     };
 
     const handleDeleteAccount = async () => {
-        if (window.confirm("Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.")) {
-            try {
-                await axios.delete(`/users/${user.id}`);
-                logout();
-                navigate('/');
-            } catch (err) {
-                console.error(err);
-                setError('Erreur lors de la suppression du compte.');
-            }
+        if (!window.confirm("Cette action est irréversible. Confirmer la suppression du compte ?")) return;
+        try {
+            await axios.delete(`/users/${user.id}`);
+            logout();
+            navigate('/');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Erreur lors de la suppression du compte.');
         }
     };
 
     return (
-        <div className="max-w-md mx-auto p-4 border rounded shadow">
-            <h2 className="text-2xl font-bold mb-4">Modifier le compte</h2>
-            {error && <p className="text-red-600">{error}</p>}
+        <div className="max-w-md mx-auto p-6 bg-white rounded shadow">
+            <h2 className="text-2xl font-semibold mb-4">Modifier mon compte</h2>
+            {error && <p className="text-red-600 mb-4">{error}</p>}
             <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                    <label className="block mb-1">Nom d'utilisateur</label>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={e => setUsername(e.target.value)}
-                        className="input w-full"
-                        required
-                    />
-                </div>
-                <div>
-                    <label className="block mb-1">Email</label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        className="input w-full"
-                        required
-                    />
-                </div>
-                <div>
-                    <label className="block mb-1">Nouveau mot de passe (optionnel)</label>
-                    <input
-                        type="password"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        className="input w-full"
-                        placeholder="Laissez vide pour ne pas changer"
-                    />
-                </div>
-                <div>
-                    <label className="block mb-1">Confirmer le nouveau mot de passe</label>
-                    <input
-                        type="password"
-                        value={confirmNewPassword}
-                        onChange={e => setConfirmNewPassword(e.target.value)}
-                        className="input w-full"
-                        placeholder="Laissez vide pour ne pas changer"
-                    />
-                </div>
+                <input
+                    type="text"
+                    placeholder="Nom d’utilisateur"
+                    className="input w-full"
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    required
+                />
+                <input
+                    type="email"
+                    placeholder="Email"
+                    className="input w-full"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    required
+                />
+                <input
+                    type="password"
+                    placeholder="Mot de passe actuel"
+                    className="input w-full"
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
+                    required
+                />
+                <input
+                    type="password"
+                    placeholder="Nouveau mot de passe (optionnel)"
+                    className="input w-full"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                />
+                <input
+                    type="password"
+                    placeholder="Confirmer nouveau mot de passe"
+                    className="input w-full"
+                    value={confirmNewPassword}
+                    onChange={e => setConfirmNewPassword(e.target.value)}
+                />
                 <button type="submit" className="btn w-full">Mettre à jour</button>
             </form>
-            <div className="mt-4">
-                <button onClick={handleDeleteAccount} className="btn bg-red-600 w-full">
-                    Supprimer le compte
-                </button>
-            </div>
+            <hr className="my-6" />
+            <button
+                onClick={handleDeleteAccount}
+                className="btn bg-red-600 w-full hover:bg-red-700"
+            >
+                Supprimer mon compte
+            </button>
         </div>
     );
 }
